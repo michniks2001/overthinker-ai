@@ -1,55 +1,54 @@
-"use server"
+import { NextResponse } from "next/server";
+import { promises as fs } from "fs";
+import { v4 as uuidv4 } from "uuid";
+import PDFParser from "pdf2json";
 
-import weaviate from "weaviate-client";
-import pdfParse from "pdf-parse";
+export async function POST(req) {
+  const formData = await req.formData();
+  const uploadedFiles = formData.getAll("pdf");
+  let fileName = "";
+  let parsedText = "";
 
-// Environment variables for Weaviate connection
-const weaviateURL = process.env.WEAVIATE_URL;
-const weaviateAPIKey = process.env.WEAVIATE_API_KEY;
+  if (uploadedFiles && uploadedFiles.length > 0) {
+    const uploadedFile = uploadedFiles[0];
+    console.log('Uploaded file:', uploadedFile);
 
-// Function to handle the POST request for PDF upload and parsing
-export async function POST(request) {
-    try {
-        // Get the PDF file from the request
-        const formData = await request.formData();
-        const file = formData.get("pdf");
+    if (uploadedFile instanceof File) {
+      fileName = uuidv4();
 
-        if (!file) {
-            return new Response("No file uploaded", { status: 400 });
-        }
+      const tempFilePath = `/tmp/${fileName}.pdf`;
 
-        // Convert file to buffer and parse it with pdf-parse
-        const buffer = await file.arrayBuffer();
-        const data = await pdfParse(buffer);
+      const fileBuffer = Buffer.from(await uploadedFile.arrayBuffer());
 
-        // Extract text from the PDF
-        const text = data.text;
-        console.log("Extracted Text: " + text);
+      await fs.writeFile(tempFilePath, fileBuffer); 
+      const pdfParser = new PDFParser(null, 1);
 
-        // Connect to Weaviate cloud client
-        const client = await weaviate.connectToWeaviateCloud(
-            weaviateURL,
-            {
-                authCredentials: new weaviate.ApiKey(weaviateAPIKey),
-            }
-        );
+      pdfParser.on("pdfParser_dataError", (errData) =>
+        console.log(errData.parserError)
+      );
 
-        // Check client readiness
-        const clientReadiness = await client.isReady();
-        console.log("Weaviate Client Readiness: " + clientReadiness);
+      pdfParser.on("pdfParser_dataReady", () => {
+        console.log(pdfParser.getRawTextContent());
+        parsedText = pdfParser.getRawTextContent();
+      });
 
-        // You can now proceed to interact with Weaviate (e.g., store the PDF text in Weaviate)
-
-        // Close the Weaviate client connection
-        client.close();
-
-        // Return a successful response with the parsed text
-        return new Response(JSON.stringify({ message: "File uploaded and parsed successfully", extractedText: text }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-        });
-    } catch (error) {
-        console.error("Error processing PDF:", error);
-        return new Response("Failed to process PDF", { status: 500 });
+      await new Promise((resolve, reject) => {
+        pdfParser.loadPDF(tempFilePath);
+        pdfParser.on("pdfParser_dataReady", resolve);
+        pdfParser.on("pdfParser_dataError", reject);
+      });
+    } else {
+        console.log('Uploaded file is not in the expected format.');
+      return new NextResponse("Uploaded file is not in the expected format.", {
+        status: 500,
+      });
     }
+  } else {
+    console.log('No files found.');
+    return new NextResponse("No File Found", { status: 404 });
+  }
+
+  const response = new NextResponse(parsedText);
+  response.headers.set("FileName", fileName);
+  return response;
 }
