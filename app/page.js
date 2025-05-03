@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+
 
 export default function Home() {
     const [file, setFile] = useState(null);
@@ -8,6 +10,8 @@ export default function Home() {
     const [fileName, setFileName] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+
+    const router = useRouter();
 
     const handleFileChange = (event) => {
         const uploadedFile = event.target.files[0];
@@ -106,8 +110,13 @@ export default function Home() {
                 </div>
 
                 <div className="space-y-4">
-
                     <textarea className="w-full p-4 mt-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors" placeholder="What are you studying for?"></textarea>
+                </div>
+
+                <div className="space-y-4 mt-4">
+                    <button className="w-full px-6 py-2 rounded-lg border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50" onClick={() => router.push('/quiz')}>
+                        Start Studying
+                    </button>
                 </div>
             </div>
         </div>
