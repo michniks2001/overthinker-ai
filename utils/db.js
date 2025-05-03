@@ -1,4 +1,4 @@
-import weaviate, { generative, vectorizer } from "weaviate-client"
+import weaviate, { generative, vectorizer, generativeParameters } from "weaviate-client"
 
 const weaviateUrl = process.env.WEAVIATE_URL
 const weaviateApiKey = process.env.WEAVIATE_API_KEY
@@ -47,3 +47,4 @@ export async function storeDoc(client, collectionName, fileName, text, originalF
 export async function resetDb(client) {
     await client.collections.deleteAll()
 }
+

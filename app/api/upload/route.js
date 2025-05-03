@@ -1,13 +1,38 @@
 "use server"
 
+/**
+ * @fileoverview API route handler for PDF file uploads.
+ * This module processes uploaded PDF files, extracts their text content,
+ * and stores them in a Weaviate vector database for later retrieval and analysis.
+ * 
+ * The upload process involves:
+ * 1. Receiving PDF files via form data
+ * 2. Saving the file temporarily
+ * 3. Parsing the PDF content using pdf2json
+ * 4. Storing the document in the Weaviate database
+ * 5. Cleaning up temporary files
+ */
+
 import { NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import { v4 as uuidv4 } from "uuid";
 import PDFParser from "pdf2json";
 import { connectToDB, closeConnection, createCollection, storeDoc, resetDb } from "../../../utils/db";
 
+/**
+ * Name of the Weaviate collection where documents will be stored
+ * @constant {string}
+ */
 const COLLECTION_NAME = "Documents";
 
+/**
+ * Handles POST requests for PDF file uploads.
+ * 
+ * @async
+ * @function POST
+ * @param {Request} req - The incoming HTTP request containing form data with PDF file
+ * @returns {NextResponse} JSON response indicating success or failure of the upload process
+ */
 export async function POST(req) {
     const formData = await req.formData();
     const uploadedFiles = formData.getAll("pdf");
@@ -57,7 +82,7 @@ export async function POST(req) {
                 }
 
                 try {
-                    // Connect to Weaviate database
+                    // SECTION: Database Connection and Setup
                     console.log("Connecting to Weaviate database...");
                     dbClient = await connectToDB();
                     console.log("Database connection established");
@@ -81,7 +106,7 @@ export async function POST(req) {
                 }
 
                 try {
-                    // Store the document in the database
+                    // SECTION: Document Storage
                     console.log("Storing document in database...");
                     console.log(`Collection: ${COLLECTION_NAME}, FileName: ${fileName}, ContentLength: ${parsedText.length}`);
                     
@@ -94,7 +119,7 @@ export async function POST(req) {
                     );
                     console.log("Document stored in database with ID:", docId);
                     
-                    // Clean up temporary file
+                    // SECTION: Cleanup
                     try {
                         console.log(`Cleaning up temporary file: ${tempFilePath}`);
                         await fs.unlink(tempFilePath);
@@ -118,6 +143,7 @@ export async function POST(req) {
             return new NextResponse("No File Found", { status: 404 });
         }
 
+        // SECTION: Response Generation
         const response = new NextResponse(JSON.stringify({
             success: true,
             message: "File uploaded and stored in database",
@@ -128,6 +154,7 @@ export async function POST(req) {
         response.headers.set("Content-Type", "application/json");
         return response;
     } catch (error) {
+        // SECTION: Error Handling
         console.error("Error processing upload:", error);
         return new NextResponse(JSON.stringify({
             success: false,
@@ -135,9 +162,10 @@ export async function POST(req) {
             error: error.message
         }), { status: 500, headers: { "Content-Type": "application/json" } });
     } finally {
-        // Close database connection
+        // SECTION: Resource Cleanup
         if (dbClient) {
             await closeConnection(dbClient);
+            console.log("Database connection closed");
         }
     }
 }
