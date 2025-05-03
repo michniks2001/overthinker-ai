@@ -149,7 +149,8 @@ export async function POST(req) {
             message: "File uploaded and stored in database",
             fileName: fileName,
             originalFileName: originalFileName,
-            documentId: docId
+            documentId: docId,
+            parsedText: parsedText
         }));
         response.headers.set("Content-Type", "application/json");
         return response;

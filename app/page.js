@@ -10,6 +10,7 @@ export default function Home() {
     const [fileName, setFileName] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [studyPrompt, setStudyPrompt] = useState('');
 
     const router = useRouter();
 
@@ -41,18 +42,21 @@ export default function Home() {
             });
 
             if (!res.ok) {
-                throw new Error(`Error: ${res.status} ${res.statusText}`);
+                const errorData = await res.json();
+                throw new Error(errorData.message || `Error: ${res.status} ${res.statusText}`);
             }
 
-            // Get the filename from the header
-            const fileNameHeader = res.headers.get('FileName');
-            if (fileNameHeader) {
-                setFileName(fileNameHeader);
+            const data = await res.json();
+            
+            // Set the filename from the response
+            if (data.fileName) {
+                setFileName(data.fileName);
             }
 
-            // Get the parsed text from the response body
-            const text = await res.text();
-            setParsedText(text);
+            // Set the parsed text if available
+            if (data.parsedText) {
+                setParsedText(data.parsedText);
+            }
         } catch (error) {
             console.error('Error uploading PDF:', error);
             setError(error.message || 'Failed to upload and parse PDF');
@@ -81,6 +85,15 @@ export default function Home() {
                 </button>
             </div>
 
+            <div className="mb-4">
+                <textarea
+                    className="w-full p-4 mt-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                    placeholder="What are you studying for?"
+                    value={studyPrompt}
+                    onChange={(e) => setStudyPrompt(e.target.value)}
+                />
+            </div>
+
             {error && (
                 <div className="p-4 mb-4 bg-red-100 text-red-700 rounded">
                     {error}
@@ -105,10 +118,22 @@ export default function Home() {
             {parsedText && (
                 <div className="mt-4">
                     <button
-                        onClick={async () => {
-                            const res = await fetch('/api/study-session');
+                            onClick={async () => {
+                            const res = await fetch(`/api/study-session?query=${studyPrompt}`);
                             const data = await res.json();
-                            console.log(data)
+                            if (data.status === 200) {
+                                try {
+                                    // The quiz data is already in the correct format
+                                    const studySessionData = data.quiz;
+                                    // Navigate to quiz page with the data
+                                    router.push(`/quiz?studyData=${encodeURIComponent(JSON.stringify(studySessionData))}`);
+                                } catch (error) {
+                                    console.error('Error parsing study data:', error);
+                                    setError('Failed to parse study session data');
+                                }
+                            } else {
+                                setError(data.error || 'Failed to generate study session');
+                            }
                         }}
                         className="px-4 py-2 bg-green-500 text-white rounded"
                     >

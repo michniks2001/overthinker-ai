@@ -5,6 +5,10 @@ import { generativeParameters } from "weaviate-client";
 export async function GET(req) {
     let client = null;
     try {
+        // Get the search query from the URL
+        const { searchParams } = new URL(req.url);
+        const query = searchParams.get('query') || "quiz";
+        
         // Connect to the database
         client = await connectToDB();
         console.log("Connected to database");
@@ -14,12 +18,13 @@ export async function GET(req) {
         console.log("Searching for documents...");
         
         // Use the RAG pattern with nearText as shown in the template
-        const searchResponse = await documents.generate.nearText("quiz", {
+        const searchResponse = await documents.generate.nearText(query, {
             singlePrompt: {
                 prompt: "Summarize this text: {text}"
             },
             groupedTask: { 
-                prompt: `Based on the document content, generate a quiz with various question types.
+                prompt: `You are a helpful AI tutor for computer science students.
+                Based on the document content, generate a series of learning steps including explanations, questions, and hands-on coding exercises, in JSON format.
                 For the explanation question type, provide a comprehensive explanation of the topic using unhinged and creative language and references while making it easy to digest. Provide comparisons that would make sense while still allowing the user to understand key terms.
                 For explanations and hints, make sure to use unhinged and creative language and references while making it easy to digest. Provide comparisons that would make sense while still allowing the user to understand key terms.
                 Return the response as a valid JSON object with the following schema:

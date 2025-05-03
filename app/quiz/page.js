@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
+import { useSearchParams } from 'next/navigation';
 
 const QuizPage = () => {
     const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -11,55 +12,33 @@ const QuizPage = () => {
     const [showResults, setShowResults] = useState(false);
     const [showHint, setShowHint] = useState(false);
     const [showExplanation, setShowExplanation] = useState(false);
+    const [questions, setQuestions] = useState([]);
+    const [freeResponseAnswer, setFreeResponseAnswer] = useState('');
+    const searchParams = useSearchParams();
 
-    // Sample questions
-    // TODO: Replace with AI response
-    const questions = [
-        {
-          "type": "explanation",
-          "title": "What is a Binary Tree?",
-          "content": "A binary tree is a hierarchical data structure in which each node has at most two children, commonly referred to as the left and right child. It is used in various algorithms for searching, sorting, and expression parsing."
-        },
-        {
-          "type": "multiple_choice_question",
-          "question": "Which of the following statements is true about binary search trees (BST)?",
-          "options": [
-            "All nodes have exactly two children.",
-            "Left child nodes contain values less than the parent.",
-            "Right child nodes contain values less than the parent.",
-            "BSTs do not allow duplicate values."
-          ],
-          "correct_option_index": 1,
-          "explanation": "In a BST, all left descendants are less than the current node, and all right descendants are greater.",
-          "hint": "Think about the ordering property of BSTs. What must be true about values in the left subtree compared to the root?"
-        },
-        {
-          "type": "code_question",
-          "prompt": "Write a recursive function in Python that counts the number of nodes in a binary tree.",
-          "language": "python",
-          "starter_code": "def count_nodes(node):\n    # Your code here\n    pass",
-          "solution": "def count_nodes(node):\n    if node is None:\n        return 0\n    return 1 + count_nodes(node.left) + count_nodes(node.right)",
-          "hint": "Remember the base case: an empty tree has 0 nodes. Then, for each node, count 1 plus the nodes in its left and right subtrees.",
-          "explanation": "The solution uses recursion to count nodes. The base case is when the node is None (empty tree), which returns 0. For any other node, we count 1 (the current node) plus the count of nodes in its left subtree plus the count of nodes in its right subtree. This recursive approach naturally traverses the entire tree."
-        },
-        {
-          "type": "true_false_question",
-          "question": "A full binary tree is one where every node has either 0 or 2 children.",
-          "answer": true,
-          "explanation": "Correct! A full binary tree has no nodes with only one child.",
-          "hint": "Consider what makes a tree 'full'. Can a node have exactly one child in a full binary tree?"
-        },
-        {
-          "type": "free_response_question",
-          "question": "What is the time complexity of the binary search tree insertion operation?",
-          "explanation": "The time complexity of binary search tree insertion is O(log n) because the tree is balanced. In the worst case, the tree may become unbalanced, resulting in O(n) time complexity.",
-          "hint": "Consider the worst-case scenario for the tree's balance."
-        },
-        {
-          "type": "quiz_end_summary",
-          "feedback": "Great work! You seem to understand the basics of binary trees. You might want to revisit tree traversal algorithms next."
+    useEffect(() => {
+        const studyData = searchParams.get('studyData');
+        if (studyData) {
+            try {
+                const parsedData = JSON.parse(studyData);
+                // The questions are nested under the 'questions' key
+                setQuestions(parsedData.questions || []);
+            } catch (error) {
+                console.error('Error parsing study data:', error);
+            }
         }
-    ];
+    }, [searchParams]);
+
+    // If no questions are loaded yet, show loading state
+    if (questions.length === 0) {
+        return (
+            <div className="max-w-2xl mx-auto p-6 text-black">
+                <div className="bg-white rounded-lg shadow-lg p-8">
+                    <h2 className="text-2xl font-bold mb-4">Loading Quiz...</h2>
+                </div>
+            </div>
+        );
+    }
 
     const handleAnswerSelect = (answerIndex) => {
         setSelectedAnswer(answerIndex);
@@ -86,6 +65,7 @@ const QuizPage = () => {
             setCurrentQuestion(currentQuestion + 1);
             setSelectedAnswer(null);
             setCodeAnswer('');
+            setFreeResponseAnswer('');
             setShowHint(false);
             setShowExplanation(false);
         } else {
