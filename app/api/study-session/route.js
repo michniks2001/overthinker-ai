@@ -22,7 +22,7 @@ export async function GET(req) {
                 prompt: "Provide a comprehensive summary of this document"
             },
             config: generativeParameters.openAI({
-                model: "gpt-3.5-turbo",
+                model: "gpt-4o",
             }),
         },{ 
             limit: 1,
