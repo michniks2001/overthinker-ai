@@ -50,9 +50,13 @@ const QuizPage = () => {
           "hint": "Consider what makes a tree 'full'. Can a node have exactly one child in a full binary tree?"
         },
         {
+          "type": "free_response_question",
+          "question": "What is the time complexity of the binary search tree insertion operation?",
+          "explanation": "The time complexity of binary search tree insertion is O(log n) because the tree is balanced. In the worst case, the tree may become unbalanced, resulting in O(n) time complexity.",
+          "hint": "Consider the worst-case scenario for the tree's balance."
+        },
+        {
           "type": "quiz_end_summary",
-          "score": 3,
-          "total": 4,
           "feedback": "Great work! You seem to understand the basics of binary trees. You might want to revisit tree traversal algorithms next."
         }
     ];
@@ -122,7 +126,7 @@ const QuizPage = () => {
         );
     };
 
-    const renderHint = (hint) => {
+    const renderHint = (hint, explanation) => {
         if (!hint) return null;
         
         return (
@@ -139,6 +143,7 @@ const QuizPage = () => {
                 {showHint && (
                     <div className="mt-2 p-4 bg-blue-50 rounded-lg text-blue-800">
                         {hint}
+                        {renderExplanation(explanation)}
                     </div>
                 )}
             </div>
@@ -185,8 +190,8 @@ const QuizPage = () => {
                             ))}
                         </div>
                         <div className="flex flex-col gap-2">
-                            {renderHint(currentQ.hint)}
-                            {renderExplanation(currentQ.explanation)}
+                            {renderHint(currentQ.hint, currentQ.explanation)}
+                            {/* {renderExplanation(currentQ.explanation)} */}
                         </div>
                     </div>
                 );
@@ -209,8 +214,8 @@ const QuizPage = () => {
                             />
                         </div>
                         <div className="flex flex-col gap-2">
-                            {renderHint(currentQ.hint)}
-                            {renderExplanation(currentQ.explanation)}
+                            {renderHint(currentQ.hint, currentQ.explanation)}
+                            {/* {renderExplanation(currentQ.explanation)} */}
                         </div>
                     </div>
                 );
@@ -242,8 +247,24 @@ const QuizPage = () => {
                             </button>
                         </div>
                         <div className="flex flex-col gap-2">
-                            {renderHint(currentQ.hint)}
-                            {renderExplanation(currentQ.explanation)}
+                            {renderHint(currentQ.hint, currentQ.explanation)}
+                            {/* {renderExplanation(currentQ.explanation)} */}
+                        </div>
+                    </div>
+                );
+
+            case "free_response_question":
+                return (
+                    <div className="space-y-4">
+                        <p className="text-lg">{currentQ.question}</p>
+                        <textarea
+                            className="w-full p-4 mt-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                            placeholder="Enter your answer here..."
+                            onChange={(e) => setFreeResponseAnswer(e.target.value)}
+                        />
+                        <div className="flex flex-col gap-2">
+                            {renderHint(currentQ.hint, currentQ.explanation)}
+                            {/* {renderExplanation(currentQ.explanation)} */}
                         </div>
                     </div>
                 );
