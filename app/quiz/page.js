@@ -5,6 +5,7 @@ import { useState } from 'react';
 const QuizPage = () => {
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [selectedAnswer, setSelectedAnswer] = useState(null);
+    const [freeResponseAnswer, setFreeResponseAnswer] = useState('');
     const [score, setScore] = useState(0);
     const [showResults, setShowResults] = useState(false);
 
@@ -18,9 +19,7 @@ const QuizPage = () => {
         },
         {
             question: "What is 2 + 2?",
-            type: "multiple choice",
-            options: ["3", "4", "5", "6"],
-            correctAnswer: 1
+            type: "free response"
         }
     ];
 
@@ -28,14 +27,25 @@ const QuizPage = () => {
         setSelectedAnswer(answerIndex);
     };
 
+    const handleFreeResponseChange = (e) => {
+        setFreeResponseAnswer(e.target.value);
+    };
+
     const handleNextQuestion = () => {
-        if (selectedAnswer === questions[currentQuestion].correctAnswer) {
+        const currentQ = questions[currentQuestion];
+        
+        if (currentQ.type === "multiple choice" && selectedAnswer === currentQ.correctAnswer) {
+            setScore(score + 1);
+        } else if (currentQ.type === "free response" && freeResponseAnswer.trim() !== '') {
+            // For now, we'll just count free response answers as correct if they're not empty
+            // In a real implementation, you might want to use AI to evaluate the answer
             setScore(score + 1);
         }
 
         if (currentQuestion + 1 < questions.length) {
             setCurrentQuestion(currentQuestion + 1);
             setSelectedAnswer(null);
+            setFreeResponseAnswer('');
         } else {
             setShowResults(true);
         }
@@ -44,6 +54,7 @@ const QuizPage = () => {
     const handleRestart = () => {
         setCurrentQuestion(0);
         setSelectedAnswer(null);
+        setFreeResponseAnswer('');
         setScore(0);
         setShowResults(false);
     };
@@ -71,35 +82,55 @@ const QuizPage = () => {
 
     return (
         <div className="max-w-2xl mx-auto p-6 text-black">
+
+            {/* ai tutor speech window */}
             <div className="bg-white rounded-lg shadow-lg p-8">
                     <h2 className="text-2xl font-bold mb-4">Tutor: ....</h2>
             </div>
+
             <br></br>
+
+            {/* question and answer options */}
             <div className="bg-white rounded-lg shadow-lg p-8">
+                {/* question x / total */}
                 <h2 className="text-2xl font-bold mb-4">Question {currentQuestion + 1} of {questions.length}</h2>
+                {/* question text */}
                 <p className="text-lg mb-6">{questions[currentQuestion].question}</p>
                 
-                <div className="space-y-4">
-                    {questions[currentQuestion].options.map((option, index) => (
-                        <button
-                            key={index}
-                            onClick={() => handleAnswerSelect(index)}
-                            className={`w-full text-left p-4 rounded-lg border transition-colors ${
-                                selectedAnswer === index
-                                    ? 'bg-blue-100 border-blue-500'
-                                    : 'hover:bg-gray-50 border-gray-200'
-                            }`}
-                        >
-                            {option}
-                        </button>
-                    ))}
-                </div>
+                {/* multiple choice options */}
+                {questions[currentQuestion].type === "multiple choice" ? (
+                    <div className="space-y-4">
+                        {questions[currentQuestion].options.map((option, index) => (
+                            <button
+                                key={index}
+                                onClick={() => handleAnswerSelect(index)}
+                                className={`w-full text-left p-4 rounded-lg border transition-colors ${
+                                    selectedAnswer === index
+                                        ? 'bg-blue-100 border-blue-500'
+                                        : 'hover:bg-gray-50 border-gray-200'
+                                }`}
+                            >
+                                {option}
+                            </button>
+                        ))}
+                    </div>
+                ) : ( 
+                    <div className="space-y-4">
+                        <textarea
+                            value={freeResponseAnswer}
+                            onChange={handleFreeResponseChange}
+                            placeholder="Type your answer here..."
+                            className="w-full p-4 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-h-[100px]"
+                        />
+                    </div>
+                )}
 
+                {/* // next question button */}
                 <button
                     onClick={handleNextQuestion}
-                    disabled={selectedAnswer === null}
+                    disabled={questions[currentQuestion].type === "multiple choice" ? selectedAnswer === null : freeResponseAnswer.trim() === ''}
                     className={`mt-6 px-6 py-2 rounded transition-colors ${
-                        selectedAnswer === null
+                        (questions[currentQuestion].type === "multiple choice" ? selectedAnswer === null : freeResponseAnswer.trim() === '')
                             ? 'bg-gray-300 cursor-not-allowed'
                             : 'bg-blue-500 text-white hover:bg-blue-600'
                     }`}
