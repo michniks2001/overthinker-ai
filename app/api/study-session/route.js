@@ -9,17 +9,67 @@ export async function GET(req) {
         client = await connectToDB();
         console.log("Connected to database");
         
-        // Use the Documents collection with the use method
+        // Use the Documents collection with the use method as shown in the template
         const documents = client.collections.use("Documents");
         console.log("Searching for documents...");
         
-        // Use the RAG pattern with nearText as shown in the example
-        const searchResponse = await documents.generate.nearText("summary", {
+        // Use the RAG pattern with nearText as shown in the template
+        const searchResponse = await documents.generate.nearText("quiz", {
             singlePrompt: {
                 prompt: "Summarize this text: {text}"
             },
             groupedTask: { 
-                prompt: "Provide a comprehensive summary of this document"
+                prompt: `Based on the document content, generate a quiz with various question types.
+                For the explanation question type, provide a comprehensive explanation of the topic using unhinged and creative language and references while making it easy to digest. Provide comparisons that would make sense while still allowing the user to understand key terms.
+                For explanations and hints, make sure to use unhinged and creative language and references while making it easy to digest. Provide comparisons that would make sense while still allowing the user to understand key terms.
+                Return the response as a valid JSON object with the following schema:
+                {
+                  "questions": [
+                    {
+                      "type": "explanation",
+                      "title": "string",
+                      "content": "string"
+                    },
+                    {
+                      "type": "multiple_choice_question",
+                      "question": "string",
+                      "options": ["string", "string", "..."],
+                      "correct_option_index": number,
+                      "explanation": "string",
+                      "hint": "string"
+                    },
+                    {
+                      "type": "code_question",
+                      "prompt": "string",
+                      "language": "string",
+                      "starter_code": "string",
+                      "solution": "string",
+                      "hint": "string",
+                      "explanation": "string"
+                    },
+                    {
+                      "type": "true_false_question",
+                      "question": "string",
+                      "answer": true or false,
+                      "explanation": "string",
+                      "hint": "string"
+                    },
+                    {
+                      "type": "free_response_question",
+                      "question": "string",
+                      "explanation": "string",
+                      "hint": "string"
+                    },
+                    {
+                      "type": "quiz_end_summary",
+                      "feedback": "string"
+                    }
+                  ]
+                }
+                
+                Include at least one question of each type. Make sure the JSON is valid and properly formatted.
+                Make sure the questions are relevant to the document content.
+                `
             },
             config: generativeParameters.openAI({
                 model: "gpt-4o",
@@ -32,18 +82,44 @@ export async function GET(req) {
         console.log(`Found ${searchResponse.objects.length} documents`);
         
         if (searchResponse.objects.length > 0) {
-            // Process the results as shown in the example
+            // Process the results as shown in the template
             for (const result of searchResponse.objects) {
                 console.log("Properties:", JSON.stringify(result.properties, null, 2));
                 console.log("Single prompt result:", result.generative?.text);
                 console.log("Grouped task result:", searchResponse.generative?.text);
             }
             
+            // Try to parse the quiz content
+            let quizData;
+            try {
+                // Get the response text
+                let responseText = searchResponse.generative?.text || "";
+                
+                // Remove markdown code block syntax if present
+                responseText = responseText.replace(/^```json\n|^```\n|\n```$/g, "");
+                
+                // Log the cleaned text for debugging
+                console.log("Cleaned JSON text:", responseText.substring(0, 100) + "...");
+                
+                // Try to parse the cleaned text as JSON
+                quizData = JSON.parse(responseText);
+                console.log("Successfully generated quiz");
+            } catch (parseError) {
+                console.error("Error parsing quiz JSON:", parseError);
+                console.log("Raw response:", searchResponse.generative?.text);
+                
+                // Return error with the raw text
+                return NextResponse.json({
+                    status: 500,
+                    error: "Failed to generate valid quiz format",
+                    rawResponse: searchResponse.generative?.text
+                });
+            }
+            
             return NextResponse.json({
                 status: 200,
-                summary: searchResponse.objects[0].generative?.text,
-                groupedSummary: searchResponse.generative?.text,
-                document: searchResponse.objects[0].properties
+                quiz: quizData,
+                documentName: searchResponse.objects[0].properties.original_file_name
             });
         } else {
             return NextResponse.json({
