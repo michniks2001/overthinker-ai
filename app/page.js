@@ -92,6 +92,7 @@ export default function Home() {
                 throw new Error(errorData.message || `Error: ${res.status} ${res.statusText}`);
             }
 
+            // Read the response body once as JSON
             const data = await res.json();
             
             // Set the filename from the response
@@ -99,9 +100,10 @@ export default function Home() {
                 setFileName(data.fileName);
             }
 
-            // Get the parsed text from the response body
-            const text = await res.text();
-            setParsedText(text);
+            // Get the parsed text from the response data
+            if (data.parsedText) {
+                setParsedText(data.parsedText);
+            }
             
             // Set document as successfully uploaded
             setIsDocumentUploaded(true);
@@ -118,23 +120,15 @@ export default function Home() {
         }
     };
 
-    const startStudySession = async () => {
-        try {
-            setIsStudying(true);
-            const res = await fetch('/api/study-session');
-            const data = await res.json();
-            
-            if (res.ok) {
-                setStudyData(data);
-            } else {
-                setError(data.error || 'Failed to start study session');
-            }
-        } catch (error) {
-            console.error('Error starting study session:', error);
-            setError(error.message || 'Failed to start study session');
-        } finally {
-            setIsStudying(false);
-        }
+    const startStudySession = () => {
+        setIsStudying(true);
+        
+        // Navigate to the quiz page instead of calling the API directly
+        // The quiz page will handle fetching the quiz data
+        setTimeout(() => {
+            // Add a small delay for better UX
+            router.push('/quiz');
+        }, 500);
     };
 
     return (
@@ -142,7 +136,7 @@ export default function Home() {
             <div className="max-w-4xl mx-auto">
                 <div className="text-center mb-12">
                     <h1 className="text-4xl font-extrabold text-purple-800 mb-2">OverThinkerAI</h1>
-                    <p className="text-xl text-gray-600">Your CS study buddy with wacky, unhinged explanations</p>
+                    <p className="text-xl text-gray/-600">Your CS study buddy with wacky, unhinged explanations</p>
                 </div>
 
                 <Card className="mb-8 border-2 border-purple-200 shadow-lg">
@@ -174,7 +168,7 @@ export default function Home() {
                                         disabled={isStudying}
                                         className="bg-green-600 hover:bg-green-700 pulse-animation"
                                     >
-                                        {isStudying ? 'Generating Quiz...' : '🧠 Start Study Session'}
+                                        {isStudying ? 'Redirecting to Quiz...' : '🧠 Start Study Session'}
                                     </Button>
                                 )}
                             </div>
@@ -188,17 +182,8 @@ export default function Home() {
                                     </svg>
                                     <p className="text-green-800 font-medium">Document successfully uploaded!</p>
                                 </div>
-                                <p className="text-gray-600 text-sm">You can now start your study session or view your document details below</p>
-                                <div className="mt-4 flex justify-center space-x-4">
-                                    <Button 
-                                        onClick={() => document.getElementById('document-processed-card')?.scrollIntoView({ behavior: 'smooth' })}
-                                        variant="outline"
-                                        className="border-green-300 text-green-700 hover:bg-green-50"
-                                    >
-                                        View Document Details
-                                    </Button>
+                                <p className="text-gray-600 text-sm mb-4">You can now start your study session</p>
                                 </div>
-                            </div>
                         )}
                     </CardContent>
                     {error && (
@@ -210,54 +195,7 @@ export default function Home() {
                     )}
                 </Card>
 
-                {fileName && (
-                    <Card id="document-processed-card" className="mb-8 border-2 border-blue-200 shadow-lg animate-fadeIn">
-                        <CardHeader>
-                            <CardTitle className="text-xl text-blue-700 flex items-center">
-                                <svg className="w-6 h-6 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                </svg>
-                                Document Ready for Study!
-                            </CardTitle>
-                            <CardDescription>Your document has been successfully uploaded and processed. You can now start your study session!</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                                <p className="font-medium text-blue-800">Document Details:</p>
-                                <p className="text-gray-600 mt-1">File ID: <span className="font-normal text-gray-600">{fileName}</span></p>
-                                <p className="text-gray-600 mt-1">Status: <span className="text-green-600 font-medium">Ready for studying</span></p>
-                            </div>
-                            
-                            {parsedText && (
-                                <div className="mt-4">
-                                    <h3 className="text-lg font-medium mb-2 flex items-center">
-                                        <svg className="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                        </svg>
-                                        Document Preview:
-                                    </h3>
-                                    <div className="p-4 bg-gray-50 rounded-lg max-h-48 overflow-auto border border-gray-200">
-                                        <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                                            {parsedText.substring(0, 500)}{parsedText.length > 500 ? '...' : ''}
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-                        </CardContent>
-                        <CardFooter className="flex flex-col items-center">
-                            <p className="text-center text-gray-600 mb-4">Ready to generate a quiz with wacky explanations based on this document?</p>
-                            <Button 
-                                onClick={startStudySession} 
-                                disabled={isStudying}
-                                className="bg-green-600 hover:bg-green-700 pulse-animation"
-                                size="lg"
-                            >
-                                {isStudying ? 'Generating Quiz...' : '🧠 Start Study Session'}
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                )}
+                {/* Ready to Study card removed as requested */}
 
                 {studyData && studyData.quiz && (
                     <Card id="quiz-ready-card" className="mb-8 border-2 border-green-200 shadow-lg animate-fadeIn">

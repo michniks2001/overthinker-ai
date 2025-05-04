@@ -27,6 +27,9 @@ export async function GET(req) {
                 Based on the document content, generate a series of learning steps including explanations, questions, and hands-on coding exercises, in JSON format.
                 For the explanation question type, provide a comprehensive explanation of the topic using unhinged and creative language and references while making it easy to digest. Provide comparisons that would make sense while still allowing the user to understand key terms.
                 For explanations and hints, make sure to use unhinged and creative language and references while making it easy to digest. Provide comparisons that would make sense while still allowing the user to understand key terms.
+                For multiple choice questions, provide a set of options that are relevant to the topic and make sense while still allowing the user to understand key terms.
+                For the coding question, provide a dostring that will contain some background information on the problem, the question, and the expected output. *DO NOT IMPLEMENT THE SOLUTION* 
+                For the true false question type, provide a set of options that are relevant to the topic and make sense while still allowing the user to understand key terms.
                 Return the response as a valid JSON object with the following schema:
                 {
                   "questions": [
@@ -46,6 +49,7 @@ export async function GET(req) {
                     {
                       "type": "code_question",
                       "prompt": "string",
+                      "description": "string",
                       "language": "string",
                       "starter_code": "string",
                       "solution": "string",
