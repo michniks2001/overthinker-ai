@@ -40,6 +40,7 @@ const styles = `
 
 const QuizPage = () => {
     const router = useRouter();
+    const editorRef = useRef(null);
     
     // Add the styles to the document
     useEffect(() => {
@@ -403,6 +404,9 @@ const QuizPage = () => {
                                 defaultLanguage={currentQ.language || 'javascript'}
                                 defaultValue={currentQ.starter_code || '// Write your code here'}
                                 onChange={handleCodeChange}
+                                onMount={(editor) => {
+                                    editorRef.current = editor;
+                                }}
                                 theme="vs-dark"
                                 options={{
                                     minimap: { enabled: false },
@@ -422,6 +426,9 @@ const QuizPage = () => {
                                 onClick={() => {
                                     if (currentQ.starter_code) {
                                         setCodeAnswer(currentQ.starter_code);
+                                        if (editorRef.current) {
+                                            editorRef.current.setValue(currentQ.starter_code);
+                                        }
                                     }
                                 }}
                             >
@@ -578,6 +585,7 @@ const QuizPage = () => {
     const isAnswerable = ["multiple_choice_question", "true_false_question", "code_question", "free_response_question"].includes(currentQ.type);
     const canProceed = isAnswerable ? (
         currentQ.type === "code_question" ? codeAnswer.trim() !== '' :
+        currentQ.type === "free_response_question" ? freeResponseAnswer.trim() !== '' :
         selectedAnswer !== null
     ) : true;
 
